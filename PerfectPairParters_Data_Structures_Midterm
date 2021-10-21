@@ -1,0 +1,133 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 15 14:40:25 2020
+@author: rspence
+"""
+
+"""
+This program receives a dictionary of students names and their top three choices of a partner.
+The approach is one that really only works for realistic problems where people are present.
+In the real world, a class of students has friends who have favorites. There are always factors to consider in situations like these, and nothing is truly random.
+Thus, this program only analyzes such situations... an implementation (not in the coding sense of the word) would be in order for a random set of objects and their random choices.
+(The students could also be arbitrary numbers, other strings besides names, etc)
+In this approach, there is only one method. I did not bother to create a weight system and a "fans_dict" to solve the problem. 
+Given the example dictionary and any other reasonable dictionary, this program will work (as far as I know).
+Anyway, enough of the introductory stuff... to the explanation of how the method works!
+This program takes a dictionary and iterates over its keys (I'll call them students or objects), dividing them up into perfect pairs based off the priority of their choices.
+First, it checks to see if two students chose each other as their first choice. 
+  There is no case where these two shouldn't be paired together, as each student only gets three choices and can only choose one other student per choice.
+  This pair is added to the list of perfect pairs.
+  The original dictionary of students is decremented based off the pairs found. ie, students who have a pair are removed from future checks.
+Second, it checks if each remaining student's second choice of partner chose them as their first choice. This case is the second highest ranking in terms of priority. This is explained further in comments below.
+  This pair is added to the list of perfect pairs.
+  The dictionary is decremented again, deleting the students who have been paired.
+Thirdly, it checks if each remaining student's second choice chose them as their second choice.
+  This pair is added to the list of perfect pairs.
+  The dictionary is decremented, once again.
+This pattern continues until all three of each student's choices have been checked. Hopefully, all students will be paired at this point.
+If there still exist students who are not paired - sometimes this happens - those students will automatically be assigned a random group, given there are no more than two.
+If there are more than two students/objects leftover, the program gives feedback to the user to let them know something happened and how to fix it. 
+Next, the program checks for duplicates and removed them. This happens because I didn't want to delete students during each iteration, maybe it saves memory or time *shrugs* I dunno
+Finally, it returns the list of perfect pairs (as long as no students were left out, otherwise it returns an error and how to fix the problem)!
+"""
+
+def find_perfect_partners(ppartners_dict):
+   
+    #Creates the list for the final pairs
+    #Not a dict because why would it need to be?
+    final_submission = []
+
+    #These are two counter variables to keep track of which choice we are testing
+    #This is difficult to explain, but yeah...
+    #Basically, at the end of the next while loop (the main beef of this cow) one of the variables will be incremented...
+    part = 0
+    ner = 0
+    length = len(ppartners_dict)
+
+    #If we have an odd number of students, we cannot pair them up fairly,
+    #So, the program gives up! (and passes useful feedback to the user)
+    if length%2 != 0:
+      print("You must enter an even number of students/objects to pair!")
+      print("Please submit a valid dictionary of students/objects with their choices!")
+      return None
+
+    #The program won't work very well if each object doesn't choose exactly 3 other objects, and also:      
+    #It won't work well if a student/object chooses another student/object that is not present in the class/group,
+    #So, it checks both in one big loop!
+    #This loop checks all student's choices to verify that each student made valid choices.
+    for student, choices in ppartners_dict.items():
+      #Check that all students/objects made exactly 3 choices.
+      if len(choices) != 3:
+        print("Each student/object is required to have exactly 3 choices!\nPlease fix the problem and try again!")
+        return None
+      #Now check that all choices are actual keys in the original dictionary!  
+      for choice in choices:
+        if choice not in ppartners_dict.keys():
+          print("One or more of your students or objects has made an invalid choice!\nStudents/objects are only allowed to choose students/objects that are in the dictionary!")
+          print("Please fix the problem and try again!")
+          print("Hint: Make sure everything is spelled correctly, as that is a common mistake...")
+          return None
+
+    #We want to loop through every student's choice,
+    #Since every student got 3 choices and the index of the third item in a list is 2, we loop from 0 to 2
+    while ner<=2:
+      for student, choice in ppartners_dict.items():
+        #listOfChoices is the students part-th choice's choices
+        #ie, if part is 1, listOfChoices will be the student's 2nd choice's list of choices
+        listOfChoices = ppartners_dict.get(choice[part])
+        #If their part-th choice exists still (they haven't already been assigned), then:
+        if listOfChoices is not None:
+          chosen = listOfChoices[ner]
+          if student == chosen:
+            final_submission += [(student,choice[part])]
+
+      #Clear ppartners_dict of already paired students.
+      for name in final_submission:
+        #Check to see that the students haven't already been cleared before trying to clear them.
+        if name[0] in ppartners_dict:
+          #For students who were paired based off non even ranking of choice (they weren't each others 1st choices, 2nd choices, etc),
+          #we have to delete only 1 pair, since they were counted and added to fans_dict only once.
+          if part == ner:
+            del ppartners_dict[name[0]] 
+          else:
+            del ppartners_dict[name[ner]]
+
+      #We only want to increment part or ner each time, and we want to evenly alternate between incrementing each one
+      if part == ner:
+        ner+=1
+      else:
+        part+=1
+
+    #And now comes the point that every survivor of elementary school PE class dreads with every fiber of their being...
+    #Sort of... this situation is a little different...
+    #When there are only two kids left, we have no choice but to pair them together...
+    #Such is life...
+    if len(ppartners_dict.items())==2:
+      leftovers=[]
+      for student, choice in ppartners_dict.items():
+        leftovers.append(student)
+      final_submission += [(leftovers[0],leftovers[1])]
+
+    #This next loop-the-loop weeds out duplicate pairs.
+    #One person is the perfect pair for another and vice versa,
+    #but we don't need to count them twice, they'll be one unit in the final answer.
+    #Although not all pairs will be duplicated, there are no special cases here to consider, thus
+    #All cases are tested the same way because there are only two objects per pair (thus only two ways to order them)
+    for pair in final_submission:
+      for pear in final_submission:
+        if pair[0]==pear[1]:
+          byeBye = final_submission.index(pair)
+          del(final_submission[byeBye])
+
+    #Returns(prints) the list of perfect pairs
+    #Yay! we almost done, hopefully it works!
+    if len(final_submission)*2 == length:
+      print("The results are in! \nThe perfect pairs are (in no particular order):\n")
+      for x in final_submission:
+        one = x[0]
+        two = x[1]
+        print(one.capitalize(), "and", two.capitalize())
+    else:
+      print("Something went wrong!\nThis program only works with realistic situations where popularity comes into play \nand the students/objects actually have friends or favorites among each other...")
+      print("Please use realistic data.")
+      return None
